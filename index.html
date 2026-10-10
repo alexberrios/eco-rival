@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#06080f">
-<title>Eco Rival v2.5 · CS2</title>
+<title>Eco Rival v2.6 · CS2</title>
 <!--
   Eco Rival v2 · predictor de economía rival para CS2 (MR12, Competitivo/Premier).
   Valores verificados el 10-10-2026:
@@ -186,6 +186,21 @@ body.pre .start{display:flex}body.pre .app{display:none}
 .sside.t.on{border:2px solid var(--t);background:rgba(224,160,58,.14)}
 .lnk{background:none;border:0;color:var(--amber);text-decoration:underline;font-size:13px;padding:6px;cursor:pointer}
 #ourSide{font-size:15px;padding:3px 10px}
+
+/* v2.6 · plata rival en pantalla principal */
+.mstrip{margin-top:10px;padding-top:10px;border-top:1px solid var(--brd)}
+.mtot{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.mtot span{font-family:var(--cond);text-transform:uppercase;letter-spacing:2px;font-size:12px;color:var(--mut)}
+.mtot b{font-family:var(--cond);font-size:20px;font-variant-numeric:tabular-nums}
+.mp{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.mc{background:var(--surf2);border:1px solid var(--brd);border-top:3px solid var(--mut);border-radius:4px;padding:4px 2px;text-align:center;font-variant-numeric:tabular-nums;min-width:0}
+.mc i{display:block;font-style:normal;font-size:10px;color:var(--mut)}
+.mc b{display:block;font-family:var(--cond);font-size:17px;line-height:1.1}
+.mc s{display:block;text-decoration:none;font-size:9.5px;color:var(--mut);white-space:nowrap;overflow:hidden}
+.mc.full{border-top-color:var(--olive)}.mc.full b{color:var(--olive)}
+.mc.mid{border-top-color:var(--amber)}.mc.mid b{color:var(--amber)}
+.mc.low{border-top-color:var(--bad)}.mc.low b{color:var(--bad)}
+.mlegend{font-size:10.5px;color:var(--mut);margin-top:4px}
 </style>
 </head>
 <body>
@@ -208,7 +223,7 @@ body.pre .start{display:flex}body.pre .app{display:none}
   <button class="tool" id="sOT" style="width:100%;margin-top:12px">Alargue MR3 ($10.000): <b id="sOTv"></b></button>
   <button class="go" id="sGo" style="margin-top:14px" disabled>COMENZAR MATCH</button>
  </div>
- <div class="foot"><span class="ver">v2.5</span></div>
+ <div class="foot"><span class="ver">v2.6</span></div>
 </div>
 <div class="app">
  <header class="glass">
@@ -246,7 +261,7 @@ body.pre .start{display:flex}body.pre .app{display:none}
    <div class="tools" style="margin-top:10px"><button class="tool" id="bUndo"><svg width="16" height="16"><use href="#i-undo"/></svg>Deshacer</button><button class="tool" id="bNew"><svg width="16" height="16"><use href="#i-new"/></svg>Nuevo match</button></div>
   </section>
  </div>
- <div class="foot">Estimación por jugador con simulación de 400 escenarios. Las drops y kills reales mueven la plata. Todo se guarda en este navegador. <span class="ver">v2.5</span></div>
+ <div class="foot">Estimación por jugador con simulación de 400 escenarios. Las drops y kills reales mueven la plata. Todo se guarda en este navegador. <span class="ver">v2.6</span></div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -255,7 +270,7 @@ body.pre .start{display:flex}body.pre .app{display:none}
 const ECO={LADDER:[1400,1900,2400,2900,3400],WIN:{elim:3250,time:3250,bomb:3500,defuse:3500},PLANT:800,MAX:16000,START:800,OT_START:10000,CT_KILL:50,
  KILL:{rifle:300,smg:600,awp:100,shotgun:900,pistol:300},
  // costo por tier: 0 eco total, 1 eco con pistolas, 2 half/force, 3 full débil, 4 full completo
- COST:{T:[0,350,2300,3900,4800],CT:[0,400,2500,4400,5500]}, PISTOL_SPEND:650};
+ COST:{T:[0,350,2300,3900,4800],CT:[0,400,2500,4400,5500]}, PISTOL_SPEND:800};
 const TIERS=['Eco total','Eco con pistolas','Half / Force','Full buy débil','Full buy completo'];
 const TSHORT=['ECO','PIS','FOR','FBD','FB'];
 function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
@@ -280,7 +295,7 @@ function simulate(st){
     if(r>24&&(r-25)%6===0){P.forEach(p=>{p.m=ECO.OT_START;p.e=0});lc=1}
     // gasto
     const costs=ECO.COST[side];
-    P.forEach(p=>{let tgt=info.pistol?ECO.PISTOL_SPEND:costs[rd.buy];
+    P.forEach(p=>{let tgt=info.pistol?(rd.buy===0?300:ECO.PISTOL_SPEND):costs[rd.buy]; // pistola: por defecto gastan los $800
       let s=rd.buy>=2?Math.max(0,tgt-p.e):tgt; s=Math.min(p.m,Math.max(0,s));
       if(rd.buy===2&&!info.pistol)s=Math.min(p.m,Math.max(s,p.m*.8)); // force = gastan casi todo
       p.m-=s;p.spent=s;p.gear=p.e+s});
@@ -398,6 +413,7 @@ let cur={},selStart=null;
 const TC=['var(--t0)','var(--t1)','var(--t2)','var(--t3)','var(--t4)'];
 const save=()=>localStorage.setItem(KEY,JSON.stringify(st));
 const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1600)};
+const fmtk=n=>n>=1000?'$'+(Math.round(n/100)/10).toString().replace('.',',')+'k':'$'+Math.round(n);
 const fmt=n=>'$'+Math.round(n).toLocaleString('es-CL');
 function ends(side){return side==='T'?{win:[['elim','Eliminación'],['bomb','Explotó la bomba']],loss:[['elim','Eliminación sin plant'],['plantlost','Plantaron y perdieron'],['time','Se acabó el tiempo']]}
  :{win:[['elim','Eliminación'],['defuse','Desactivaron'],['time','Se acabó el tiempo']],loss:[['elim','Eliminación'],['bomb','Explotó la bomba']]}}
@@ -423,6 +439,8 @@ function render(){
  html+=`<div class="call"><svg width="20" height="20" style="color:var(--cy)"><use href="#i-mic"/></svg><p>${p.pistol?'Pistola: jueguen tradeados y en grupo. Si ganamos, el rival suele ir eco la próxima.':short(c[1])}</p></div>`;
  if(p.nextLose&&!p.pistol){const nm=x=>x.pistol?'pistola':TIERS[x.top].toLowerCase();
   html+=`<div class="why" style="font-size:13px">Próxima: si pierden → <b style="color:${TC[p.nextLose.top]}">${nm(p.nextLose)}</b> · si ganan → <b style="color:${TC[p.nextWin.top]}">${nm(p.nextWin)}</b></div>`}
+ {const cc=ECO.COST[side],tot=p.P.reduce((a,x)=>a+x.m,0);
+  html+=`<div class="mstrip"><div class="mtot"><span>Plata rival</span><b>~${fmt(tot)}</b></div><div class="mp">${p.P.slice().sort((a,b)=>b.m+b.e-a.m-a.e).map((x,i)=>{const v=x.m+x.e*0.9,k=v>=cc[3]?'full':v>=cc[2]?'mid':'low';return `<div class="mc ${k}"><i>P${i+1}</i><b>${fmtk(x.m)}</b><s>${fmtk(x.lo)}–${fmtk(x.hi)}</s></div>`}).join('')}</div></div>`}
  const pc=$('#predCard');pc.innerHTML=html;pc.classList.remove('fade');void pc.offsetWidth;pc.classList.add('fade');
  let det=`<div class="bars">${TIERS.map((t,i)=>`<div class="bar"><span>${t}</span><div class="tr"><i style="width:${d[i]*100}%;background:${TC[i]}"></i></div><span class="p">${Math.round(d[i]*100)}%</span></div>`).join('')}</div>
  <div class="lbl" style="margin-top:14px">Plata estimada por jugador · bono derrota ${p.lc?fmt(ECO.LADDER[Math.min(5,p.lc+1)-1]):'—'}</div>
@@ -437,7 +455,7 @@ function render(){
  $('#optWin').innerHTML=E.win.map(([k,l])=>opt('win',cur.won===1&&cur.end===k,l,`data-w="1" data-e="${k}"`)).join('');
  $('#optLoss').innerHTML=E.loss.map(([k,l])=>opt('loss',cur.won===0&&cur.end===k,l,`data-w="0" data-e="${k}"`)).join('');
  if(cur.buy==null)cur.buy=p.pistol?1:top; cur.sug=p.pistol?1:top;
- $('#optBuy').innerHTML=(p.pistol?[[1,'Pistola (normal)'],[2,'Pistola + utility/kit']]:TIERS.map((t,i)=>[i,t])).map(([i,t])=>opt('tier',cur.buy===i,t+(i===cur.sug?' ★':''),`data-b="${i}"`,`--c:${TC[i]}`)).join('');
+ $('#optBuy').innerHTML=(p.pistol?[[1,'Gastaron los $800'],[0,'Guardaron algo']]:TIERS.map((t,i)=>[i,t])).map(([i,t])=>opt('tier',cur.buy===i,t+(i===cur.sug?' ★':''),`data-b="${i}"`,`--c:${TC[i]}`)).join('');
  if(cur.surv==null)cur.surv=autoSurv(cur,side); $('#survSum').textContent=cur.surv+(cur.survManual?'':' auto');
  $('#survDots').innerHTML=[0,1,2,3,4].map(i=>`<span class="dot${i<cur.surv?' on':''}"></span>`).join('')+`<b style="margin-left:6px;font-size:20px">${cur.surv}</b>`;
  $('#optKills').innerHTML=[['a','Auto'],...[0,1,2,3,4,5].map(i=>[i,String(i)])].map(([k,l])=>opt('sm',String(cur.kills??'a')===String(k),l,`data-k="${k}"`)).join('');
