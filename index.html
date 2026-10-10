@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#06080f">
-<title>Eco Rival v2.4 · CS2</title>
+<title>Eco Rival v2.5 · CS2</title>
 <!--
   Eco Rival v2 · predictor de economía rival para CS2 (MR12, Competitivo/Premier).
   Valores verificados el 10-10-2026:
@@ -171,6 +171,21 @@ header.usT{border-color:var(--brd);border-bottom:3px solid var(--t);box-shadow:n
 .why{color:var(--txt)}
 summary{color:var(--mut)}
 @media(max-width:480px){.tierName{font-size:34px}.lbl{font-size:11px;letter-spacing:1.5px}}
+
+/* v2.5 · pantalla de inicio */
+.start{display:none;min-height:100vh;padding:24px 16px;flex-direction:column;justify-content:center;max-width:520px;margin:0 auto}
+body.pre .start{display:flex}body.pre .app{display:none}
+.sbox{background:var(--surf);border:1px solid var(--brd);border-radius:10px;padding:24px 18px;text-align:center}
+.stitle{font-family:var(--cond);text-transform:uppercase;letter-spacing:3px;font-size:44px;margin:14px 0 4px;font-weight:700}
+.ssub{color:var(--mut);margin:0 0 22px;font-size:14px}
+.sbig{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sside{min-height:120px;border-radius:8px;border:1px solid var(--brd);background:var(--surf2);font-family:var(--cond);font-size:46px;font-weight:700;letter-spacing:4px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.sside small{font-family:var(--body);font-size:12px;letter-spacing:1px;color:var(--mut);font-weight:400;text-transform:uppercase}
+.sside.ct{color:var(--ct)}.sside.t{color:var(--t)}
+.sside.ct.on{border:2px solid var(--ct);background:rgba(91,141,239,.14)}
+.sside.t.on{border:2px solid var(--t);background:rgba(224,160,58,.14)}
+.lnk{background:none;border:0;color:var(--amber);text-decoration:underline;font-size:13px;padding:6px;cursor:pointer}
+#ourSide{font-size:15px;padding:3px 10px}
 </style>
 </head>
 <body>
@@ -183,13 +198,25 @@ summary{color:var(--mut)}
  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></symbol>
  <symbol id="i-swap" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/></symbol>
 </svg>
+<div id="startScr" class="start">
+ <div class="sbox">
+  <div class="brand" style="justify-content:center"><svg width="26" height="26" style="color:var(--amber)"><use href="#i-cross"/></svg><b>ECO</b> RIVAL</div>
+  <h1 class="stitle">Nuevo match</h1>
+  <p class="ssub">Predice la compra del rival ronda a ronda. MR12, cambio de lado en la 13.</p>
+  <div class="lbl" style="justify-content:center">Nosotros partimos de</div>
+  <div class="sbig"><button class="sside ct" data-st="CT">CT<small>Antiterroristas</small></button><button class="sside t" data-st="T">T<small>Terroristas</small></button></div>
+  <button class="tool" id="sOT" style="width:100%;margin-top:12px">Alargue MR3 ($10.000): <b id="sOTv"></b></button>
+  <button class="go" id="sGo" style="margin-top:14px" disabled>COMENZAR MATCH</button>
+ </div>
+ <div class="foot"><span class="ver">v2.5</span></div>
+</div>
 <div class="app">
  <header class="glass">
   <div class="brand"><svg width="22" height="22" style="color:var(--cy)"><use href="#i-cross"/></svg><b>ECO</b><span>RIVAL</span></div>
   <div class="score"><div><div class="n us" id="sUs">0</div><small>NOS</small></div><div style="color:var(--mut)">:</div><div><div class="n them" id="sThem">0</div><small>RIVAL</small></div></div>
   <div class="rbadge">Ronda<b id="rNow">1</b></div>
  </header>
- <div class="glass seg" id="ourSeg"><span class="segl">Nosotros</span><button data-our="CT" class="sg ct">CT</button><button data-our="T" class="sg t">T</button><span class="segr" id="segInfo"></span></div>
+ <div class="glass seg" id="ourSeg"><span class="segl">Nosotros</span><span id="ourSide" class="sideTag"></span><span class="segr" id="segInfo"></span><button class="lnk" id="bChg">cambiar</button></div>
 
  <div class="grid">
   <section class="glass card fade" id="predCard"></section>
@@ -219,7 +246,7 @@ summary{color:var(--mut)}
    <div class="tools" style="margin-top:10px"><button class="tool" id="bUndo"><svg width="16" height="16"><use href="#i-undo"/></svg>Deshacer</button><button class="tool" id="bNew"><svg width="16" height="16"><use href="#i-new"/></svg>Nuevo match</button></div>
   </section>
  </div>
- <div class="foot">Estimación por jugador con simulación de 400 escenarios. Las drops y kills reales mueven la plata. Todo se guarda en este navegador. <span class="ver">v2.4</span></div>
+ <div class="foot">Estimación por jugador con simulación de 400 escenarios. Las drops y kills reales mueven la plata. Todo se guarda en este navegador. <span class="ver">v2.5</span></div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -367,7 +394,7 @@ if(typeof module!=='undefined')module.exports={ECO,TIERS,simulate,predict,predic
 if(typeof document!=='undefined'){
 const KEY='ecoRival.v2',$=s=>document.querySelector(s);
 let st;try{st=JSON.parse(localStorage.getItem(KEY))}catch(e){} if(!st||!st.rounds)st=initState();
-let cur={};
+let cur={},selStart=null;
 const TC=['var(--t0)','var(--t1)','var(--t2)','var(--t3)','var(--t4)'];
 const save=()=>localStorage.setItem(KEY,JSON.stringify(st));
 const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1600)};
@@ -381,7 +408,9 @@ function render(){
  const p=predict(st), side=p.side, sc=side==='T'?'sideT':'sideCT';
  $('#sUs').textContent=p.us;$('#sThem').textContent=p.them;$('#rNow').textContent=p.round;
  const our=side==='T'?'CT':'T';document.querySelector('header').className='glass us'+our;
- document.querySelectorAll('.sg').forEach(b=>b.classList.toggle('on',b.dataset.our===our));
+ const os=$('#ourSide');os.className='sideTag side'+our;os.textContent=our;
+ document.body.classList.toggle('pre',!(st.started||st.rounds.length));
+ document.querySelectorAll('.sside').forEach(b=>b.classList.toggle('on',b.dataset.st===selStart));$('#sGo').disabled=!selStart;$('#sOTv').textContent=st.ot?'Sí':'No';
  $('#segInfo').innerHTML='Rival <b style="color:var(--'+(side==='T'?'t':'ct')+')">'+side+'</b>'+(p.round<=24?' · cambio en R13':'');
  $('#sideNow').className='sideTag '+sc;$('#sideNow').textContent='Rival '+side;
  const d=p.dist, top=p.top, name=p.pistol?'Ronda de pistola':TIERS[top];
@@ -426,13 +455,17 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
  else if(ds.k!=null)cur.kills=ds.k==='a'?null:+ds.k;
  else if(ds.wp!=null)cur.weap=ds.wp||null;
  else if(ds.s!=null)cur.saved=+ds.s;
+ else if(ds.st){selStart=ds.st}
  else if(ds.our){const r=st.rounds.length+1,rival=ds.our==='T'?'CT':'T';if(sideOf(st,r)!==rival){st.start=st.start==='T'?'CT':'T';save();toast('Nosotros: '+ds.our)}}
  else return; render();});
 $('#sMinus').onclick=()=>{cur.survManual=1;cur.surv=Math.max(0,(cur.surv||0)-1);render()};
 $('#sPlus').onclick=()=>{cur.survManual=1;cur.surv=Math.min(5,(cur.surv||0)+1);render()};
 $('#go').onclick=()=>{st.rounds.push({won:cur.won,end:cur.end,buy:cur.buy,surv:cur.surv,kills:cur.kills??null,weap:cur.weap||null,saved:cur.saved||0});save();cur={};render();toast('Ronda '+st.rounds.length+' registrada');window.scrollTo({top:0,behavior:'smooth'})};
 $('#bUndo').onclick=()=>{if(!st.rounds.length)return;st.rounds.pop();save();cur={};render();toast('Última ronda borrada')};
-$('#bNew').onclick=()=>{if(confirm('¿Empezar un match nuevo?')){st={...initState(),start:st.start,ot:st.ot};save();cur={};render()}};
+$('#bNew').onclick=()=>{if(confirm('¿Terminar este match y empezar uno nuevo? Se borra el historial.')){st={...initState(),ot:st.ot,started:false};selStart=null;save();cur={};render();window.scrollTo(0,0)}};
+$('#sOT').onclick=()=>{st.ot=!st.ot;save();render()};
+$('#sGo').onclick=()=>{if(!selStart)return;st={...initState(),ot:st.ot,start:selStart==='CT'?'T':'CT',started:true};save();cur={};render();toast('Match iniciado · nosotros '+selStart)};
+$('#bChg').onclick=()=>{if(!confirm('¿Cambiar de lado? Se invierten los lados de todo el match.'))return;st.start=st.start==='T'?'CT':'T';save();cur={};render();toast('Lados invertidos')};
 $('#bOT').onclick=()=>{st.ot=!st.ot;save();render()};
 render();
 }
