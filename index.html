@@ -2,198 +2,362 @@
 <html lang="es-CL">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>Eco Rival · CS2</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#06080f">
+<title>Eco Rival v2 · CS2</title>
 <!--
-  Valores de economía CS2 (Competitivo/Premier), verificados 10-10-2026:
-  - Victoria: 3250 (eliminación / tiempo), 3500 (bomba explotó T / defuse CT)
-  - Loss bonus: 1400, 1900, 2400, 2900, 3400 (máx). Ganar baja el contador 1 paso (no resetea).
-    Cada mitad parte con el contador en 1 paso => perder la pistola paga 1900.
-  - T pierde con bomba plantada: +800 a cada T. T vivos al perder por tiempo (sin plant): 0.
-  - CT: +50 por cada T eliminado a todo el equipo (update julio 2025).
-  - Kills: rifles/pistolas 300, SMG 600 (P90 300), escopetas 900, AWP 100. Máximo 16000.
-  Fuentes: csdb.gg/guides/economy-guide, gamemapa.com/en/cs-2/tools/economy-calculator,
-           cs2pedia.com/guides/cs2-economy-guide, csspot.org (round money system).
-  (Liquipedia bloqueó la consulta automática.)
+  Eco Rival v2 · predictor de economía rival para CS2 (MR12, Competitivo/Premier).
+  Valores verificados el 10-10-2026:
+  - Victoria: 3250 (eliminación/tiempo), 3500 (bomba explotó T / defuse CT).
+  - Bono por derrota: 1400,1900,2400,2900,3400. Ganar baja el contador 1 paso (no reinicia).
+    Cada mitad parte con el contador en 1 => perder la pistola paga 1900.
+  - T pierde con bomba plantada: +800 a cada T. T vivos al perder por tiempo sin plant: 0.
+  - CT: +50 a todo el equipo por cada T eliminado (update julio 2025).
+  - Kills: rifle/pistola 300, SMG 600, escopeta 900, AWP 100. Máximo 16000.
+  Fuentes: csdb.gg/guides/economy-guide · gamemapa.com/en/cs-2/tools/economy-calculator ·
+           cs2pedia.com/guides/cs2-economy-guide · csspot.org.
+  Alargue: MR3 con $10.000 (valor típico de Valve/FACEIT; ajustable).
 -->
 <style>
-:root{--bg:#0a0d14;--card:#121826;--line:#1f2a40;--txt:#e6ecff;--mut:#8a97b8;--t:#f5a623;--ct:#4aa3ff;--ok:#2bff88;--bad:#ff3b6b;--neon:#00f0ff}
+:root{--bg:#06080f;--glass:rgba(20,28,48,.55);--brd:rgba(120,170,255,.14);--txt:#eaf1ff;--mut:#8792b0;
+--cy:#00e5ff;--or:#ff8a1f;--t:#ffb03a;--ct:#5aa8ff;--ok:#2bff9a;--bad:#ff4170;
+--t0:#ff4170;--t1:#ff7a45;--t2:#ffc53d;--t3:#5ad1ff;--t4:#2bff9a}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:radial-gradient(circle at 50% -20%,#1a2340,var(--bg) 60%);color:var(--txt);font:16px/1.35 system-ui,Segoe UI,Roboto,sans-serif;min-height:100vh}
-.wrap{max-width:720px;margin:0 auto;padding:12px}
-h1{margin:4px 0 2px;font-size:22px;letter-spacing:2px;color:var(--neon);text-shadow:0 0 10px var(--neon)}
-.sub{color:var(--mut);font-size:13px;margin-bottom:10px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0;box-shadow:0 0 18px #00f0ff10}
-.lbl{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--mut);margin:10px 0 6px}
-.row{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}
-button{font:inherit;font-weight:700;color:var(--txt);background:#182035;border:2px solid var(--line);border-radius:12px;min-height:54px;padding:8px;cursor:pointer;transition:.1s}
-button:active{transform:scale(.97)}
-button.on{border-color:var(--neon);box-shadow:0 0 12px var(--neon);background:#0f2a35}
-button.t.on{border-color:var(--t);box-shadow:0 0 12px var(--t);background:#33240a}
-button.ct.on{border-color:var(--ct);box-shadow:0 0 12px var(--ct);background:#0b2240}
-button.win.on{border-color:var(--ok);box-shadow:0 0 12px var(--ok)}
-button.loss.on{border-color:var(--bad);box-shadow:0 0 12px var(--bad)}
-.main{width:100%;margin-top:12px;background:linear-gradient(90deg,#00b8d4,#7c4dff);border:0;font-size:19px;min-height:62px}
-.pred{text-align:center}
-.big{font-size:34px;font-weight:900;letter-spacing:2px;margin:4px 0}
-.money{display:flex;justify-content:space-around;margin:8px 0}
-.money b{display:block;font-size:22px;color:var(--ok)}
-.money span{font-size:12px;color:var(--mut)}
-.bar{height:10px;background:#0b1020;border-radius:6px;overflow:hidden;margin:6px 0}
-.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--bad),var(--t),var(--ok))}
-.exp{color:var(--mut);font-size:14px;text-align:left}
-.hist{font-size:13px;color:var(--mut);max-height:220px;overflow:auto}
-.hist div{padding:4px 0;border-bottom:1px solid var(--line)}
-.tools{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-.tools button{min-height:46px;font-size:14px}
-input[type=number]{font:inherit;width:100%;min-height:50px;background:#0b1020;color:var(--txt);border:2px solid var(--line);border-radius:12px;padding:8px;font-size:18px}
-.hd{display:flex;justify-content:space-between;align-items:center}
-.pill{padding:4px 10px;border-radius:20px;font-size:13px;font-weight:700}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.4 "Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif}
+body{min-height:100vh;background:
+ radial-gradient(800px 400px at 10% -10%,rgba(0,229,255,.16),transparent 60%),
+ radial-gradient(700px 400px at 100% 0%,rgba(255,138,31,.14),transparent 60%),var(--bg)}
+.app{max-width:1240px;margin:0 auto;padding:12px 12px 90px}
+.glass{background:var(--glass);border:1px solid var(--brd);border-radius:18px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 10px 40px rgba(0,0,0,.35)}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;position:sticky;top:8px;z-index:5}
+.brand{display:flex;align-items:center;gap:8px;font-weight:900;letter-spacing:2px}
+.brand b{color:var(--cy);text-shadow:0 0 12px var(--cy)}
+.score{display:flex;align-items:center;gap:10px;font-weight:900}
+.score .n{font-size:28px;min-width:28px;text-align:center}
+.score .us{color:var(--cy);text-shadow:0 0 14px var(--cy)}.score .them{color:var(--or);text-shadow:0 0 14px var(--or)}
+.score small{display:block;font-size:10px;color:var(--mut);letter-spacing:1.5px;text-align:center}
+.rbadge{font-size:12px;color:var(--mut);text-align:right}
+.rbadge b{display:block;font-size:15px;color:var(--txt)}
+.grid{display:grid;gap:12px;margin-top:12px}
+@media(min-width:960px){.grid{grid-template-columns:1.1fr 1fr}.span2{grid-column:1/3}}
+.card{padding:14px}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:1.8px;color:var(--mut);margin:0 0 8px;display:flex;align-items:center;gap:6px}
+.sideTag{padding:2px 8px;border-radius:8px;font-weight:800;font-size:11px}
+.sideT{background:rgba(255,176,58,.15);color:var(--t)}.sideCT{background:rgba(90,168,255,.15);color:var(--ct)}
+.headline{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.tierName{font-size:34px;font-weight:900;letter-spacing:1px;line-height:1;transition:color .3s,text-shadow .3s}
+.prob{font-size:13px;color:var(--mut)}
+.stack{display:flex;height:16px;border-radius:10px;overflow:hidden;margin:14px 0 6px;background:#0a0f1c}
+.stack i{display:block;height:100%;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.bars{display:grid;gap:6px;margin-top:8px}
+.bar{display:grid;grid-template-columns:118px 1fr 42px;align-items:center;gap:8px;font-size:13px}
+.bar .tr{height:8px;background:#0a0f1c;border-radius:6px;overflow:hidden}
+.bar .tr i{display:block;height:100%;border-radius:6px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.bar .p{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.money{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:12px}
+.pl{background:rgba(255,255,255,.03);border:1px solid var(--brd);border-radius:12px;padding:6px 4px;text-align:center}
+.pl b{display:block;font-size:14px;font-variant-numeric:tabular-nums}
+.pl span{font-size:10px;color:var(--mut)}
+.pl.full b{color:var(--ok)}.pl.mid b{color:var(--t2)}.pl.low b{color:var(--bad)}
+.pl .gun{font-size:10px;color:var(--cy)}
+.why{margin-top:10px;font-size:14px;color:#c6d0ea}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--brd);background:rgba(255,255,255,.04)}
+.chip.hot{border-color:var(--or);color:var(--or)}.chip.cool{border-color:var(--cy);color:var(--cy)}
+.call{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:14px;background:linear-gradient(90deg,rgba(0,229,255,.12),rgba(0,229,255,.02));border:1px solid rgba(0,229,255,.3)}
+.call svg{flex:none}
+.call h3{margin:0 0 4px;font-size:15px;color:var(--cy)}
+.call p{margin:0;font-size:14px;color:#cfe9f2}
+.fc{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.fc div{padding:10px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid var(--brd);font-size:13px}
+.fc b{display:block;font-size:16px;margin-top:2px}
+.step{margin-bottom:14px}
+.step .lbl .num{width:20px;height:20px;border-radius:50%;display:inline-grid;place-items:center;background:var(--cy);color:#001;font-weight:900;font-size:11px}
+.opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.grp{font-size:11px;color:var(--mut);margin:8px 0 6px}
+button{font:inherit;color:var(--txt);cursor:pointer}
+.opt{min-height:52px;padding:8px 10px;border-radius:14px;border:1.5px solid var(--brd);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center}
+.opt:active{transform:scale(.96)}
+.opt.win.on{border-color:var(--or);background:rgba(255,138,31,.16);box-shadow:0 0 16px rgba(255,138,31,.35)}
+.opt.loss.on{border-color:var(--cy);background:rgba(0,229,255,.14);box-shadow:0 0 16px rgba(0,229,255,.35)}
+.opt.tier.on{border-color:var(--c);background:color-mix(in srgb,var(--c) 18%,transparent);box-shadow:0 0 16px color-mix(in srgb,var(--c) 45%,transparent)}
+.opt.sm.on{border-color:var(--cy);background:rgba(0,229,255,.14)}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{width:56px;height:52px;border-radius:14px;border:1.5px solid var(--brd);background:rgba(255,255,255,.04);font-size:24px;font-weight:900}
+.stepper .v{flex:1;display:flex;gap:6px;justify-content:center}
+.dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--brd);transition:.2s}
+.dot.on{background:var(--or);border-color:var(--or);box-shadow:0 0 10px var(--or)}
+.go{width:100%;min-height:60px;border:0;border-radius:16px;font-weight:900;font-size:18px;letter-spacing:1.5px;color:#00131a;background:linear-gradient(90deg,var(--cy),#7cf3ff 50%,var(--or));box-shadow:0 8px 30px rgba(0,229,255,.25);display:flex;align-items:center;justify-content:center;gap:8px}
+.go:disabled{opacity:.35;filter:grayscale(.7)}
+details{margin-top:12px;border-top:1px solid var(--brd);padding-top:10px}
+summary{cursor:pointer;color:var(--mut);font-size:13px;list-style:none;display:flex;align-items:center;gap:6px}
+summary::-webkit-details-marker{display:none}
+.adv{display:grid;gap:12px;margin-top:10px}
+.tl{display:flex;gap:6px;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:thin}
+.rc{flex:none;width:44px;border-radius:10px;padding:4px 0;text-align:center;font-size:11px;border:1.5px solid var(--brd);background:rgba(255,255,255,.03);position:relative}
+.rc b{display:block;font-size:13px}
+.rc.us{border-color:var(--cy)}.rc.them{border-color:var(--or)}
+.rc .tb{display:block;margin:3px auto 0;width:30px;height:4px;border-radius:3px}
+.rc.miss::after{content:"";position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:var(--bad)}
+.rc.hit::after{content:"";position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:var(--ok)}
+.rc.swap{margin-left:10px}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.tool{flex:1;min-width:110px;min-height:46px;border-radius:12px;border:1px solid var(--brd);background:rgba(255,255,255,.04);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px}
+.foot{color:var(--mut);font-size:12px;text-align:center;margin-top:12px}
+.fade{animation:fd .35s ease}@keyframes fd{from{opacity:.2;transform:translateY(4px)}to{opacity:1;transform:none}}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(100px);background:#0d1424;border:1px solid var(--cy);padding:10px 16px;border-radius:12px;transition:.3s;z-index:9}
+.toast.show{transform:translateX(-50%)}
+@media(max-width:480px){.tierName{font-size:28px}.bar{grid-template-columns:100px 1fr 38px}.score .n{font-size:24px}.brand span{display:none}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="hd"><div><h1>ECO RIVAL</h1><div class="sub">Predice la compra del rival · CS2 MR12</div></div>
-  <div id="status" class="pill"></div></div>
+<svg width="0" height="0" style="position:absolute">
+ <symbol id="i-cross" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M12 2v6M12 16v6M2 12h6M16 12h6"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+ <symbol id="i-mic" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3zM5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+ <symbol id="i-undo" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
+ <symbol id="i-new" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></symbol>
+ <symbol id="i-ok" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3" d="M4 12l5 5L20 6"/></symbol>
+ <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></symbol>
+ <symbol id="i-swap" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/></symbol>
+</svg>
+<div class="app">
+ <header class="glass">
+  <div class="brand"><svg width="22" height="22" style="color:var(--cy)"><use href="#i-cross"/></svg><b>ECO</b><span>RIVAL</span></div>
+  <div class="score"><div><div class="n us" id="sUs">0</div><small>NOS</small></div><div style="color:var(--mut)">:</div><div><div class="n them" id="sThem">0</div><small>RIVAL</small></div></div>
+  <div class="rbadge">Ronda<b id="rNow">1</b></div>
+ </header>
 
-  <div class="card pred" id="predCard"></div>
+ <div class="grid">
+  <section class="glass card fade" id="predCard"></section>
 
-  <div class="card">
-    <div class="lbl">Ronda <span id="rnum"></span> · Lado del rival</div>
-    <div class="row" data-k="side"><button class="t" data-v="T">TERRORISTA</button><button class="ct" data-v="CT">ANTITERRORISTA</button></div>
-    <div class="lbl">¿El rival ganó la ronda?</div>
-    <div class="row" data-k="won"><button class="win" data-v="1">GANÓ</button><button class="loss" data-v="0">PERDIÓ</button></div>
-    <div class="lbl">¿Cómo terminó?</div>
-    <div class="row" data-k="end">
-      <button data-v="elim">Eliminación</button><button data-v="bomb">Explotó bomba</button>
-      <button data-v="defuse">Desactivada</button><button data-v="time">Se acabó el tiempo</button>
-      <button data-v="plantlost">Plantaron y T perdió</button></div>
-    <div class="lbl">¿Qué compró el rival esta ronda?</div>
-    <div class="row" data-k="buy"><button data-v="pistol">Pistola</button><button data-v="eco">Eco</button><button data-v="force">Force</button><button data-v="full">Full buy</button><button data-v="custom">Gasto aprox.</button></div>
-    <div id="customBox" style="display:none"><div class="lbl">Gasto promedio por jugador ($)</div><input id="spend" type="number" inputmode="numeric" step="100" min="0" max="16000" placeholder="ej: 3500"></div>
-    <div class="lbl">Rivales vivos al final</div>
-    <div class="row" data-k="surv"><button data-v="0">0</button><button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button></div>
-    <div class="lbl">¿Guardaron armas? (opcional)</div>
-    <div class="row" data-k="saved"><button data-v="1">Sí, guardaron</button><button data-v="0">No</button></div>
-    <button class="main" id="add">REGISTRAR RONDA ➜</button>
-  </div>
+  <section class="glass card">
+   <div class="step"><div class="lbl"><span class="num">1</span> ¿Quién ganó y cómo? <span id="sideNow" class="sideTag"></span></div>
+    <div class="grp">GANÓ EL RIVAL</div><div class="opts" id="optWin"></div>
+    <div class="grp">GANAMOS NOSOTROS</div><div class="opts" id="optLoss"></div></div>
+   <div class="step"><div class="lbl"><span class="num">2</span> ¿Qué compró el rival esta ronda?</div><div class="opts" id="optBuy"></div></div>
+   <div class="step"><div class="lbl"><span class="num">3</span> Rivales vivos al final</div>
+    <div class="stepper"><button id="sMinus" aria-label="menos">−</button><div class="v" id="survDots"></div><button id="sPlus" aria-label="más">+</button></div></div>
+   <button class="go" id="go" disabled><svg width="20" height="20"><use href="#i-ok"/></svg>REGISTRAR</button>
+   <details id="adv"><summary><svg width="16" height="16"><use href="#i-gear"/></svg>Avanzado: kills, armas guardadas, lados, alargue</summary>
+    <div class="adv">
+     <div><div class="lbl">Kills que hizo el rival (auto si no marcas)</div><div class="opts" id="optKills"></div></div>
+     <div><div class="lbl">Arma principal de esas kills</div><div class="opts" id="optWeap"></div></div>
+     <div><div class="lbl">¿Los vivos guardaron (save)?</div><div class="opts" id="optSave"></div></div>
+     <div class="tools"><button class="tool" id="bSide"><svg width="16" height="16"><use href="#i-swap"/></svg>Rival parte de <span id="startSide"></span></button><button class="tool" id="bOT">Alargue: <span id="otV"></span></button></div>
+    </div></details>
+  </section>
 
-  <div class="card">
-    <div class="tools"><button id="undo">↶ Deshacer</button><button id="ot">Alargue: <span id="otv"></span></button><button id="reset">⟲ Nuevo match</button></div>
-    <div class="lbl">Historial</div><div class="hist" id="hist"></div>
-  </div>
-  <div class="sub" style="text-align:center">Estimación por jugador promedio. Las kills reales cambian la plata ±. Guarda todo en este navegador.</div>
+  <section class="glass card span2">
+   <div class="lbl">Línea de tiempo · borde = quién ganó (<span style="color:var(--cy)">nos</span>/<span style="color:var(--or)">rival</span>), barra = compra rival, punto = acierto del modelo</div>
+   <div class="tl" id="tl"></div>
+   <div class="tools" style="margin-top:8px"><button class="tool" id="bUndo"><svg width="16" height="16"><use href="#i-undo"/></svg>Deshacer</button><button class="tool" id="bNew"><svg width="16" height="16"><use href="#i-new"/></svg>Nuevo match</button></div>
+  </section>
+ </div>
+ <div class="foot">Estimación por jugador con simulación de 400 escenarios. Las drops y kills reales mueven la plata. Todo se guarda en este navegador.</div>
 </div>
+<div class="toast" id="toast"></div>
+
 <script>
 /* ===== ECO LOGIC (pura, testeable con node) ===== */
-const ECO={LADDER:[1400,1900,2400,2900,3400],WIN:{elim:3250,time:3250,bomb:3500,defuse:3500,plantlost:3250},
- PLANT:800,MAX:16000,START:800,OT_START:10000,CT_KILL_BONUS:50,
- FULL:{T:4300,CT:5000}, SPEND:{pistol:650,eco:200,force:2300}};
-function halfInfo(r,ot){ // r = número de ronda (1..)
-  if(r<=24){return {pistol:r===1||r===13,half:r<=12?1:2,lastOfHalf:r===12||r===24,swapAfter:r===12}}
-  if(!ot) return {pistol:false,half:3,lastOfHalf:false,swapAfter:false};
-  const k=(r-25)%3; return {otStart:k===0,pistol:false,half:3,lastOfHalf:k===2,swapAfter:k===2};
+const ECO={LADDER:[1400,1900,2400,2900,3400],WIN:{elim:3250,time:3250,bomb:3500,defuse:3500},PLANT:800,MAX:16000,START:800,OT_START:10000,CT_KILL:50,
+ KILL:{rifle:300,smg:600,awp:100,shotgun:900,pistol:300},
+ // costo por tier: 0 eco total, 1 eco con pistolas, 2 half/force, 3 full débil, 4 full completo
+ COST:{T:[0,350,2300,3900,4800],CT:[0,400,2500,4400,5500]}, PISTOL_SPEND:650};
+const TIERS=['Eco total','Eco con pistolas','Half / Force','Full buy débil','Full buy completo'];
+const TSHORT=['ECO','PIS','FOR','FBD','FB'];
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function roundInfo(r,ot,start){
+  const flip=s=>s==='T'?'CT':'T';
+  if(r<=24)return {side:r<=12?start:flip(start),pistol:r===1||r===13,last:r===12||r===24,otStart:false,matchPoint:false};
+  const b=Math.floor((r-25)/3),k=(r-25)%3, blockSide=Math.floor(b)%2===0?flip(start):start; // primer bloque OT = lado de 2ª mitad
+  return {side:blockSide,pistol:false,last:k===2,otStart:(r-25)%6===0,ot:true};
 }
-function initState(ot){return {ot:!!ot,rounds:[]}}
-// recalcula todo desde el historial
+function sideOf(st,r){ // en alargue alterna cada 3 rondas
+  const flip=s=>s==='T'?'CT':'T';
+  if(r<=24)return roundInfo(r,st.ot,st.start).side;
+  const b=Math.floor((r-25)/3); return b%2===0?flip(st.start):st.start;
+}
+function initState(){return {ot:true,start:'T',rounds:[]}}
+// simula los 5 jugadores rivales a lo largo del historial
 function simulate(st){
-  let money=ECO.START,lossCount=1,r=1,out=[];
+  let P=[0,1,2,3,4].map(()=>({m:ECO.START,e:0})),lc=1,us=0,them=0,r=1;
   for(const rd of st.rounds){
-    const h=halfInfo(r,st.ot);
-    if(h.pistol){money=ECO.START;lossCount=1}
-    if(h.otStart){money=ECO.OT_START;lossCount=1}
-    let spend=rd.buy==='custom'?(+rd.spend||0):rd.buy==='full'?ECO.FULL[rd.side]+300:(ECO.SPEND[rd.buy]||0);
-    spend=Math.min(spend,money);
-    let carry=money-spend, income, incomeMin, kills;
-    const surv=+rd.surv;
-    if(rd.won){
-      income=ECO.WIN[rd.end]||3250; lossCount=Math.max(0,lossCount-1);
-      kills=4; incomeMin=income;
-    }else{
-      lossCount=Math.min(5,lossCount+1);
-      const bonus=ECO.LADDER[lossCount-1];
-      income=bonus; incomeMin=bonus;
-      if(rd.side==='T'&&rd.end==='plantlost'){income+=ECO.PLANT;incomeMin+=ECO.PLANT}
-      if(rd.side==='T'&&rd.end==='time'&&surv>0){income=bonus*(5-surv)/5;incomeMin=0}
-      kills=rd.buy==='eco'?1:2;
-    }
-    const killAvg=kills*300/5 + (rd.side==='CT'?kills*ECO.CT_KILL_BONUS:0);
-    // equipo guardado/sobreviviente reduce el costo de la siguiente compra
-    const keptFrac=(rd.buy==='full'||rd.buy==='force'||(rd.buy==='custom'&&spend>2000))?(surv/5)*(rd.won||+rd.saved?1:0.6):0;
-    money=Math.min(ECO.MAX,carry+income+killAvg);
-    const minMoney=Math.min(ECO.MAX,carry+incomeMin);
+    const info=roundInfo(r,st.ot,st.start), side=sideOf(st,r);
+    if(info.pistol){P.forEach(p=>{p.m=ECO.START;p.e=0});lc=1}
+    if(r>24&&(r-25)%6===0){P.forEach(p=>{p.m=ECO.OT_START;p.e=0});lc=1}
+    // gasto
+    const costs=ECO.COST[side];
+    P.forEach(p=>{let tgt=info.pistol?ECO.PISTOL_SPEND:costs[rd.buy];
+      let s=rd.buy>=2?Math.max(0,tgt-p.e):tgt; s=Math.min(p.m,Math.max(0,s));
+      if(rd.buy===2&&!info.pistol)s=Math.min(p.m,Math.max(s,p.m*.8)); // force = gastan casi todo
+      p.m-=s;p.spent=s;p.gear=p.e+s});
+    // sobrevivientes: los de mejor equipo
+    const order=[...P.keys()].sort((a,b)=>P[b].gear-P[a].gear);
+    const alive=new Set(order.slice(0,rd.surv));
+    // ingreso
+    const won=!!rd.won;
+    let kills=rd.kills!=null?rd.kills:(won?4:(rd.buy<=1?1:2));
+    const weap=rd.weap||(rd.buy===2?'smg':rd.buy<=1?'pistol':'rifle');
+    let inc;
+    if(won){inc=ECO.WIN[rd.end]||3250;lc=Math.max(0,lc-1);them++}
+    else{lc=Math.min(5,lc+1);inc=ECO.LADDER[lc-1];if(side==='T'&&rd.end==='plantlost')inc+=ECO.PLANT;us++}
+    P.forEach((p,i)=>{let g=inc; if(!won&&side==='T'&&rd.end==='time'&&alive.has(i))g=0; p.m+=g;
+      if(side==='CT')p.m+=kills*ECO.CT_KILL;});
+    // kills: reparte entre vivos primero
+    const killers=order.filter(i=>alive.has(i)).concat(order.filter(i=>!alive.has(i)));
+    for(let k=0;k<kills;k++)P[killers[k%5]].m+=ECO.KILL[weap]||300;
+    // equipo que queda
+    P.forEach((p,i)=>{p.e=alive.has(i)?Math.min(p.gear,5500)*0.8:0;if(!won&&rd.saved&&alive.has(i))p.e=Math.min(p.gear,5500)*0.9;p.m=Math.min(ECO.MAX,Math.round(p.m))});
     r++;
-    out.push({round:r-1,avg:Math.round(money),min:Math.round(minMoney),lossCount,keptFrac,side:rd.side});
-    money=Math.min(ECO.MAX,carry+income+killAvg);
   }
-  return {nextRound:r,money,lossCount,log:out};
+  return {P,lc,round:r,us,them};
 }
-function predict(st){
-  const sim=simulate(st), r=sim.nextRound, h=halfInfo(r,st.ot);
-  const last=sim.log[sim.log.length-1];
-  let side=last?last.side:'T'; if(last&&halfInfo(r-1,st.ot).swapAfter) side=side==='T'?'CT':'T';
-  if(h.pistol) return {round:r,side,buy:'PISTOLA',conf:95,avg:ECO.START,min:ECO.START,why:'Ronda de pistola: todos parten con $800.'};
-  if(h.otStart) return {round:r,side,buy:'FULL BUY',conf:95,avg:ECO.OT_START,min:ECO.OT_START,why:'Inicio de alargue: $10.000 para todos.'};
-  if(!last) return {round:r,side,buy:'PISTOLA',conf:95,avg:800,min:800,why:'Inicio del match.'};
-  const avg=last.avg,min=last.min,full=ECO.FULL[side]*(1-0.6*last.keptFrac);
-  const nextLoss=ECO.LADDER[Math.min(5,sim.lossCount+1)-1];
-  const lastRound=h.lastOfHalf||r===24;
-  let buy,conf,why;
-  if(min>=full){buy='FULL BUY';conf=90;why=`Incluso con la plata mínima ($${min}) les alcanza para full (~$${Math.round(full)}).`}
-  else if(avg>=full){buy='FULL BUY';conf=70;why=`En promedio tienen ~$${avg}; justo para full (~$${Math.round(full)}). Alguno podría quedar corto.`}
-  else if(lastRound&&avg>=1200){buy='FORCE';conf=80;why='Última ronda de la mitad: la plata no se guarda, van a gastar todo.'}
-  else if(avg>=2000&&avg+(avg>=3000?0:0)>=full*0.6){
-    const ifEco=avg-200+nextLoss;
-    if(ifEco>=full&&avg<full*0.75){buy='ECO';conf=60;why=`Con ~$${avg} no llegan a full. Si ahorran y pierden reciben $${nextLoss} y llegan a ~$${Math.round(ifEco)}: lo lógico es eco para full buy después.`}
-    else{buy=avg>=3000?'FORCE':'HALF-BUY';conf=55;why=`~$${avg}: no alcanza full buy, pero ahorrar tampoco les asegura la siguiente. Espera SMGs, Galil/FAMAS o pistolas con chaleco.`}
-  }else{buy='ECO';conf=avg<1500?85:65;why=`Solo ~$${avg} por jugador. Lo más probable es eco (pistolas, quizás chaleco).${sim.lossCount>=3?` Ojo: su loss bonus ya está alto ($${nextLoss} si pierden).`:''}`}
-  if(last.keptFrac>0.3&&buy!=='FULL BUY')why+=' Tienen armas guardadas: alguno puede venir con rifle.';
-  return {round:r,side,buy,conf,avg,min,why,lossCount:sim.lossCount};
+// decisión de equipo para una muestra de plata
+function teamDecision(m,e,side,ctx,u,bias){
+  const C=ECO.COST[side],eff=i=>m[i]+e[i]*0.9;
+  const total=m.reduce((a,b)=>a+b,0),avg=total/5;
+  const n4=m.filter((x,i)=>x>=C[4]-e[i]*0.9).length, n3=m.filter((x,i)=>x>=C[3]-e[i]*0.9).length;
+  const need3=m.reduce((a,x,i)=>a+Math.max(0,C[3]-e[i]*0.9),0), need4=m.reduce((a,x,i)=>a+Math.max(0,C[4]-e[i]*0.9),0);
+  if(ctx.otStart)return 4;
+  if(ctx.afterPistolWin)return u<0.6?2:3;              // 2ª ronda tras ganar pistola: SMG/upgrade o rifle sin util
+  if(n4>=4||(n4>=3&&total>=need4))return 4;
+  if(n3>=4||(n3>=3&&total>=need3))return u<0.35+bias.full*0.3?4:3;
+  if(ctx.last||ctx.matchPoint)return avg>=1600?2:(avg>=600?1:0);
+  const ifLose=avg-150+ctx.nextLoss;                    // si ahorran y pierden
+  const ecoWorks=ifLose>=C[3]*0.95;
+  if(ecoWorks){ if(u<0.12+bias.force)return 2; return avg>=1400?1:(u<0.5?0:1); }
+  if(avg>=2600)return u<0.8?2:1;
+  if(avg>=1500)return u<0.45+bias.force?2:1;
+  return avg>=700?1:0;
 }
-if(typeof module!=='undefined')module.exports={ECO,simulate,predict,initState,halfInfo};
+function predictRaw(st,bias){
+  bias=bias||{force:0,full:0};
+  const sim=simulate(st), r=sim.round, side=sideOf(st,r), info=roundInfo(r,st.ot,st.start);
+  const dist=[0,0,0,0,0];
+  const last=st.rounds[st.rounds.length-1];
+  const ctx={otStart:r>24&&(r-25)%6===0,last:info.last,nextLoss:ECO.LADDER[Math.min(5,sim.lc+1)-1],
+    afterPistolWin:(r===2||r===14)&&last&&last.won, matchPoint:false};
+  if(st.ot===false&&r===24)ctx.last=true;
+  const reg=13; if(Math.max(sim.us,sim.them)===reg-1&&r<=24)ctx.matchPoint=sim.us===reg-1; // rival desesperado
+  if(info.pistol||st.rounds.length===0){
+    return {round:r,side,dist:[0,1,0,0,0],top:1,pistol:true,P:sim.P.map(()=>({m:800,e:0,lo:800,hi:800})),lc:1,us:sim.us,them:sim.them,avg:800,ctx};
+  }
+  if(ctx.otStart)return {round:r,side,dist:[0,0,0,0,1],top:4,P:sim.P.map(()=>({m:ECO.OT_START,e:0,lo:ECO.OT_START,hi:ECO.OT_START})),lc:1,us:sim.us,them:sim.them,avg:ECO.OT_START,ctx};
+  const R=rng(r*7919+st.rounds.length*13+1),N=400;
+  for(let s=0;s<N;s++){
+    const m=sim.P.map(p=>Math.max(0,Math.min(ECO.MAX,p.m+(R()-.5)*700+(R()<.3?300:0)))), e=sim.P.map(p=>p.e*(0.8+R()*0.4));
+    dist[teamDecision(m,e,side,ctx,R(),bias)]++;
+  }
+  const d=dist.map(x=>x/N), top=d.indexOf(Math.max(...d));
+  const avg=Math.round(sim.P.reduce((a,p)=>a+p.m,0)/5);
+  return {round:r,side,dist:d,top,P:sim.P.map(p=>({m:p.m,e:Math.round(p.e),lo:Math.max(0,p.m-350),hi:Math.min(ECO.MAX,p.m+650)})),lc:sim.lc,us:sim.us,them:sim.them,avg,ctx};
+}
+// aprende del match: compara predicción vs compra real
+function learn(st){
+  let hits=0,n=0,forceOpp=0,forced=0,fullOpp=0,fulled=0,ecoOpp=0,ecoed=0;const marks=[];
+  for(let i=0;i<st.rounds.length;i++){
+    const sub={...st,rounds:st.rounds.slice(0,i)}, p=predictRaw(sub), a=st.rounds[i].buy;
+    if(p.pistol){marks.push(null);continue}
+    n++;const ok=a===p.top||(a<=1&&p.top<=1)||(Math.abs(a-p.top)===1&&p.dist[a]>=0.25);if(ok)hits++;marks.push(ok);
+    const ecoP=p.dist[0]+p.dist[1];
+    if(ecoP>=0.5){forceOpp++;if(a>=2)forced++}
+    if(p.dist[3]>=0.4){fullOpp++;if(a===4)fulled++}
+    if(p.dist[2]>=0.4){ecoOpp++;if(a<=1)ecoed++}
+  }
+  const bias={force:forceOpp?Math.max(-0.1,Math.min(0.5,(forced+0.5)/(forceOpp+2)-0.2)):0,full:fullOpp?(fulled/fullOpp-0.35):0};
+  const chips=[];
+  if(forceOpp>=2&&forced/forceOpp>=0.5)chips.push(['hot','Este equipo forcea mucho']);
+  if(forceOpp>=2&&forced===0)chips.push(['cool','Ecos disciplinados']);
+  if(ecoOpp>=2&&ecoed/ecoOpp>=0.5)chips.push(['cool','Prefieren ahorrar a forcear']);
+  if(fullOpp>=2&&fulled/fullOpp>=0.6)chips.push(['hot','Siempre compran util completa']);
+  return {bias,hits,n,acc:n?Math.round(hits/n*100):null,chips,marks};
+}
+function predict(st){const L=learn(st);const p=predictRaw(st,L.bias);p.learn=L;
+  // pronóstico de la ronda siguiente
+  if(!p.pistol||st.rounds.length){
+    const end=p.side==='T'?'elim':'elim';
+    const ifLose={...st,rounds:st.rounds.concat([{won:0,end,buy:p.top,surv:0}])};
+    const ifWin={...st,rounds:st.rounds.concat([{won:1,end,buy:p.top,surv:3}])};
+    p.nextLose=predictRaw(ifLose,L.bias);p.nextWin=predictRaw(ifWin,L.bias);
+  }
+  return p;}
+const CALLS={
+ T:[ // rival es T
+  ['Rival en eco total','No regales armas: juega en grupo y tradeen, nada de peeks en solitario. Ojo con rush de 5 con pistolas a un site; quien vea primero canta y rotan rápido.'],
+  ['Eco con pistolas','Pueden venir Deagle/Tec-9 en stack. Juega a distancia, no hagas duelos en esquinas cerradas y cuida que no te tomen el rifle.'],
+  ['Rival en force','Espera Galil, SMG o escopetas y rush corto. Juega con distancia y utility para frenar la entrada, no te pegues a los ángulos cerrados.'],
+  ['Full buy débil','Tienen rifles pero poca utility: aguanta posiciones normales, usa tus molotovs para frenar la ejecución y retakea en grupo.'],
+  ['Full buy completo','Ronda de rifles pareja: setup default, utility para retrasar, respeta el AWP y no te quedes solo en el site. Si estás corto, guarda.']],
+ CT:[ // rival es CT
+  ['Rival en eco total','Toma el mapa con calma y en grupo. Pueden stackear un site o salir agresivos con pistolas: trade siempre y no entres solo.'],
+  ['Eco con pistolas','Cuidado con stacks y pushes con Deagle/Five-SeveN. Usa flash antes de peekear y juega a distancia larga con rifle.'],
+  ['Rival en force','Espera MP9/MAG-7 en ángulos cerrados y pushes agresivos. Limpia con utility, no entres a corta distancia sin flash.'],
+  ['Full buy débil','Tienen rifles pero poca utility: ejecuta con todo tu set, ganarás el espacio fácil. Ojo que pueden apostar a un stack.'],
+  ['Full buy completo','CT con todo: ejecuta coordinado, smokes de corte, entradas tradeadas y cuidado con el AWP en mid. Si estás corto, mejor guardar.']]};
+if(typeof module!=='undefined')module.exports={ECO,TIERS,simulate,predict,predictRaw,learn,initState,sideOf,roundInfo};
 /* ===== FIN ECO LOGIC ===== */
 </script>
 <script>
 if(typeof document!=='undefined'){
-const KEY='ecoRival.v1';
-let st; try{st=JSON.parse(localStorage.getItem(KEY))}catch(e){} if(!st||!st.rounds)st=initState(false);
+const KEY='ecoRival.v2',$=s=>document.querySelector(s);
+let st;try{st=JSON.parse(localStorage.getItem(KEY))}catch(e){} if(!st||!st.rounds)st=initState();
 let cur={};
-const $=s=>document.querySelector(s);
-function save(){localStorage.setItem(KEY,JSON.stringify(st))}
-const BUYCOL={'ECO':'#ff3b6b','HALF-BUY':'#f5a623','FORCE':'#ffd23f','FULL BUY':'#2bff88','PISTOLA':'#00f0ff'};
+const TC=['var(--t0)','var(--t1)','var(--t2)','var(--t3)','var(--t4)'];
+const save=()=>localStorage.setItem(KEY,JSON.stringify(st));
+const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1600)};
+const fmt=n=>'$'+Math.round(n).toLocaleString('es-CL');
+function ends(side){return side==='T'?{win:[['elim','Eliminación'],['bomb','Explotó la bomba']],loss:[['elim','Eliminación sin plant'],['plantlost','Plantaron y perdieron'],['time','Se acabó el tiempo']]}
+ :{win:[['elim','Eliminación'],['defuse','Desactivaron'],['time','Se acabó el tiempo']],loss:[['elim','Eliminación'],['bomb','Explotó la bomba']]}}
+function opt(cls,on,label,data,style=''){return `<button class="opt ${cls}${on?' on':''}" ${data} style="${style}">${label}</button>`}
 function render(){
-  const p=predict(st);
-  cur.side=cur.side||p.side;
-  $('#rnum').textContent=p.round-1>0?(p.round-1)+' (recién jugada)':'—';
-  if(st.rounds.length===0)$('#rnum').textContent='1';
-  else $('#rnum').textContent=st.rounds.length+1;
-  const sc=p.side==='T'?'var(--t)':'var(--ct)';
-  $('#predCard').innerHTML=`<div class="lbl">Predicción ronda ${p.round} · rival <b style="color:${sc}">${p.side}</b></div>
-   <div class="big" style="color:${BUYCOL[p.buy]};text-shadow:0 0 14px ${BUYCOL[p.buy]}">${p.buy}</div>
-   <div class="money"><div><b>$${p.min}</b><span>mínimo</span></div><div><b>$${p.avg}</b><span>promedio est.</span></div><div><b>${p.lossCount??'-'}</b><span>racha derrotas</span></div></div>
-   <div class="lbl">Confianza ${p.conf}%</div><div class="bar"><i style="width:${p.conf}%"></i></div>
-   <div class="exp">${p.why}</div>`;
-  $('#status').textContent=`Ronda ${p.round}`;$('#status').style.border='1px solid '+sc;$('#status').style.color=sc;
-  $('#otv').textContent=st.ot?'SÍ':'NO';
-  document.querySelectorAll('.row[data-k]').forEach(row=>row.querySelectorAll('button').forEach(b=>b.classList.toggle('on',String(cur[row.dataset.k])===b.dataset.v)));
-  $('#customBox').style.display=cur.buy==='custom'?'block':'none';
-  const sim=simulate(st);
-  $('#hist').innerHTML=st.rounds.map((r,i)=>`<div>R${i+1} · ${r.side} · ${r.won?'ganó':'perdió'} (${r.end}) · compró ${r.buy}${r.buy==='custom'?' $'+r.spend:''} · vivos ${r.surv} → ~$${sim.log[i].avg}</div>`).reverse().join('')||'<div>Sin rondas todavía.</div>';
+ const p=predict(st), side=p.side, sc=side==='T'?'sideT':'sideCT';
+ $('#sUs').textContent=p.us;$('#sThem').textContent=p.them;$('#rNow').textContent=p.round;
+ $('#sideNow').className='sideTag '+sc;$('#sideNow').textContent='Rival '+side;
+ const d=p.dist, top=p.top, name=p.pistol?'Ronda de pistola':TIERS[top];
+ const L=p.learn;
+ let html=`<div class="lbl">Predicción ronda ${p.round} <span class="sideTag ${sc}">Rival ${side}</span> ${p.ctx&&p.ctx.last?'<span class="chip hot">Última de la mitad</span>':''}</div>
+ <div class="headline"><div class="tierName" style="color:${TC[top]};text-shadow:0 0 18px ${TC[top]}">${name}</div><div class="prob">${p.pistol?'$800 cada uno':Math.round(d[top]*100)+'% probable'}</div></div>
+ <div class="stack">${d.map((x,i)=>`<i style="width:${x*100}%;background:${TC[i]}"></i>`).join('')}</div>
+ <div class="bars">${TIERS.map((t,i)=>`<div class="bar"><span>${t}</span><div class="tr"><i style="width:${d[i]*100}%;background:${TC[i]}"></i></div><span class="p">${Math.round(d[i]*100)}%</span></div>`).join('')}</div>
+ <div class="lbl" style="margin-top:14px">Plata estimada por jugador · bono derrota ${p.lc?fmt(ECO.LADDER[Math.min(5,p.lc+1)-1]):'—'}</div>
+ <div class="money">${p.P.slice().sort((a,b)=>b.m+b.e-a.m-a.e).map(x=>{const c=ECO.COST[side],v=x.m+x.e*0.9;const k=v>=c[4]?'full':v>=c[2]?'mid':'low';return `<div class="pl ${k}"><b>${fmt(x.m)}</b><span>${fmt(x.lo)}–${fmt(x.hi)}</span>${x.e>500?`<div class="gun">+arma ${fmt(x.e)}</div>`:''}</div>`}).join('')}</div>`;
+ html+=`<div class="chips">${L.acc!=null?`<span class="chip cool">Precisión del modelo ${L.acc}% (${L.hits}/${L.n})</span>`:''}${L.chips.map(c=>`<span class="chip ${c[0]}">${c[1]}</span>`).join('')}</div>`;
+ const c=CALLS[side][p.pistol?1:top];
+ html+=`<div class="call" style="margin-top:12px"><svg width="22" height="22" style="color:var(--cy)"><use href="#i-mic"/></svg><div><h3>Call para tu equipo · ${p.pistol?'Pistola':c[0]}</h3><p>${p.pistol?'Ronda de pistola: compren chaleco o kit/utility según el plan y jueguen tradeados. Si ganan, la ronda 2 del rival suele ser eco.':c[1]}</p></div></div>`;
+ if(p.nextLose&&!p.pistol){const f=x=>`<b style="color:${TC[x.top]}">${x.pistol?'Pistola':TIERS[x.top]}</b><span style="color:var(--mut)">${x.pistol?'':Math.round(x.dist[x.top]*100)+'% · prom. '+fmt(x.avg)}</span>`;
+  html+=`<div class="lbl" style="margin-top:14px">Ronda ${p.round+1} (después)</div><div class="fc"><div>Si el rival pierde la ${p.round}:${f(p.nextLose)}</div><div>Si el rival gana la ${p.round}:${f(p.nextWin)}</div></div>`}
+ const pc=$('#predCard');pc.innerHTML=html;pc.classList.remove('fade');void pc.offsetWidth;pc.classList.add('fade');
+ // inputs
+ const E=ends(side);
+ $('#optWin').innerHTML=E.win.map(([k,l])=>opt('win',cur.won===1&&cur.end===k,l,`data-w="1" data-e="${k}"`)).join('');
+ $('#optLoss').innerHTML=E.loss.map(([k,l])=>opt('loss',cur.won===0&&cur.end===k,l,`data-w="0" data-e="${k}"`)).join('');
+ if(cur.buy==null&&p.pistol)cur.buy=1;
+ $('#optBuy').innerHTML=(p.pistol?[[1,'Pistola (normal)'],[2,'Pistola + utility/kit']]:TIERS.map((t,i)=>[i,t])).map(([i,t])=>opt('tier',cur.buy===i,t,`data-b="${i}"`,`--c:${TC[i]}`)).join('');
+ if(cur.surv==null)cur.surv=cur.won===1?3:0;
+ $('#survDots').innerHTML=[0,1,2,3,4].map(i=>`<span class="dot${i<cur.surv?' on':''}"></span>`).join('')+`<b style="margin-left:6px;font-size:20px">${cur.surv}</b>`;
+ $('#optKills').innerHTML=[['a','Auto'],...[0,1,2,3,4,5].map(i=>[i,String(i)])].map(([k,l])=>opt('sm',String(cur.kills??'a')===String(k),l,`data-k="${k}"`)).join('');
+ $('#optWeap').innerHTML=[['','Auto'],['rifle','Rifle $300'],['smg','SMG $600'],['awp','AWP $100'],['shotgun','Escopeta $900'],['pistol','Pistola $300']].map(([k,l])=>opt('sm',(cur.weap||'')===k,l,`data-wp="${k}"`)).join('');
+ $('#optSave').innerHTML=[[0,'No'],[1,'Sí, guardaron']].map(([k,l])=>opt('sm',(cur.saved||0)===k,l,`data-s="${k}"`)).join('');
+ $('#startSide').textContent=st.start;$('#otV').textContent=st.ot?'MR3 $10.000':'No';
+ $('#go').disabled=!(cur.won!=null&&cur.buy!=null);
+ // timeline
+ $('#tl').innerHTML=st.rounds.map((r,i)=>{const m=L.marks[i];return `<div class="rc ${r.won?'them':'us'} ${m===true?'hit':m===false?'miss':''} ${i===12||(i>=24&&(i-24)%3===0)?'swap':''}"><b>${i+1}</b>${TSHORT[r.buy]}<span class="tb" style="background:${TC[r.buy]}"></span></div>`}).join('')||'<span style="color:var(--mut);font-size:13px">Registra la primera ronda y aquí verás el match.</span>';
+ $('#tl').scrollLeft=1e5;
 }
-document.querySelectorAll('.row[data-k]').forEach(row=>row.addEventListener('click',e=>{
-  const b=e.target.closest('button');if(!b)return;const k=row.dataset.k;
-  cur[k]=(k==='won'||k==='saved')?+b.dataset.v:b.dataset.v;
-  if(k==='end'){if(['bomb','plantlost'].includes(cur.end))cur.side=cur.end==='bomb'&&cur.won!==0?'T':cur.side;}
-  render();}));
-$('#add').onclick=()=>{
-  for(const k of ['side','won','end','buy','surv'])if(cur[k]===undefined){alert('Falta completar: '+{side:'lado',won:'ganó/perdió',end:'cómo terminó',buy:'compra',surv:'vivos'}[k]);return}
-  if(cur.buy==='custom')cur.spend=+$('#spend').value||0;
-  st.rounds.push({...cur,saved:cur.saved||0});save();
-  const p=predict(st);cur={side:p.side};$('#spend').value='';render();scrollTo({top:0,behavior:'smooth'});
-};
-$('#undo').onclick=()=>{st.rounds.pop();save();cur={};render()};
-$('#reset').onclick=()=>{if(confirm('¿Empezar un match nuevo?')){st=initState(st.ot);save();cur={};render()}};
-$('#ot').onclick=()=>{st.ot=!st.ot;save();render()};
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const ds=b.dataset;
+ if(ds.e){cur.won=+ds.w;cur.end=ds.e;cur.surv=cur.won?3:0;}
+ else if(ds.b!=null)cur.buy=+ds.b;
+ else if(ds.k!=null)cur.kills=ds.k==='a'?null:+ds.k;
+ else if(ds.wp!=null)cur.weap=ds.wp||null;
+ else if(ds.s!=null)cur.saved=+ds.s;
+ else return; render();});
+$('#sMinus').onclick=()=>{cur.surv=Math.max(0,(cur.surv||0)-1);render()};
+$('#sPlus').onclick=()=>{cur.surv=Math.min(5,(cur.surv||0)+1);render()};
+$('#go').onclick=()=>{st.rounds.push({won:cur.won,end:cur.end,buy:cur.buy,surv:cur.surv,kills:cur.kills??null,weap:cur.weap||null,saved:cur.saved||0});save();cur={};render();toast('Ronda '+st.rounds.length+' registrada');window.scrollTo({top:0,behavior:'smooth'})};
+$('#bUndo').onclick=()=>{if(!st.rounds.length)return;st.rounds.pop();save();cur={};render();toast('Última ronda borrada')};
+$('#bNew').onclick=()=>{if(confirm('¿Empezar un match nuevo?')){st={...initState(),start:st.start,ot:st.ot};save();cur={};render()}};
+$('#bSide').onclick=()=>{st.start=st.start==='T'?'CT':'T';save();render()};
+$('#bOT').onclick=()=>{st.ot=!st.ot;save();render()};
 render();
 }
 </script>
