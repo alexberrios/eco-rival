@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Eco Rival · CS2</title>
+<!--
+  Valores de economía CS2 (Competitivo/Premier), verificados 10-10-2026:
+  - Victoria: 3250 (eliminación / tiempo), 3500 (bomba explotó T / defuse CT)
+  - Loss bonus: 1400, 1900, 2400, 2900, 3400 (máx). Ganar baja el contador 1 paso (no resetea).
+    Cada mitad parte con el contador en 1 paso => perder la pistola paga 1900.
+  - T pierde con bomba plantada: +800 a cada T. T vivos al perder por tiempo (sin plant): 0.
+  - CT: +50 por cada T eliminado a todo el equipo (update julio 2025).
+  - Kills: rifles/pistolas 300, SMG 600 (P90 300), escopetas 900, AWP 100. Máximo 16000.
+  Fuentes: csdb.gg/guides/economy-guide, gamemapa.com/en/cs-2/tools/economy-calculator,
+           cs2pedia.com/guides/cs2-economy-guide, csspot.org (round money system).
+  (Liquipedia bloqueó la consulta automática.)
+-->
+<style>
+:root{--bg:#0a0d14;--card:#121826;--line:#1f2a40;--txt:#e6ecff;--mut:#8a97b8;--t:#f5a623;--ct:#4aa3ff;--ok:#2bff88;--bad:#ff3b6b;--neon:#00f0ff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:radial-gradient(circle at 50% -20%,#1a2340,var(--bg) 60%);color:var(--txt);font:16px/1.35 system-ui,Segoe UI,Roboto,sans-serif;min-height:100vh}
+.wrap{max-width:720px;margin:0 auto;padding:12px}
+h1{margin:4px 0 2px;font-size:22px;letter-spacing:2px;color:var(--neon);text-shadow:0 0 10px var(--neon)}
+.sub{color:var(--mut);font-size:13px;margin-bottom:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0;box-shadow:0 0 18px #00f0ff10}
+.lbl{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--mut);margin:10px 0 6px}
+.row{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}
+button{font:inherit;font-weight:700;color:var(--txt);background:#182035;border:2px solid var(--line);border-radius:12px;min-height:54px;padding:8px;cursor:pointer;transition:.1s}
+button:active{transform:scale(.97)}
+button.on{border-color:var(--neon);box-shadow:0 0 12px var(--neon);background:#0f2a35}
+button.t.on{border-color:var(--t);box-shadow:0 0 12px var(--t);background:#33240a}
+button.ct.on{border-color:var(--ct);box-shadow:0 0 12px var(--ct);background:#0b2240}
+button.win.on{border-color:var(--ok);box-shadow:0 0 12px var(--ok)}
+button.loss.on{border-color:var(--bad);box-shadow:0 0 12px var(--bad)}
+.main{width:100%;margin-top:12px;background:linear-gradient(90deg,#00b8d4,#7c4dff);border:0;font-size:19px;min-height:62px}
+.pred{text-align:center}
+.big{font-size:34px;font-weight:900;letter-spacing:2px;margin:4px 0}
+.money{display:flex;justify-content:space-around;margin:8px 0}
+.money b{display:block;font-size:22px;color:var(--ok)}
+.money span{font-size:12px;color:var(--mut)}
+.bar{height:10px;background:#0b1020;border-radius:6px;overflow:hidden;margin:6px 0}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--bad),var(--t),var(--ok))}
+.exp{color:var(--mut);font-size:14px;text-align:left}
+.hist{font-size:13px;color:var(--mut);max-height:220px;overflow:auto}
+.hist div{padding:4px 0;border-bottom:1px solid var(--line)}
+.tools{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.tools button{min-height:46px;font-size:14px}
+input[type=number]{font:inherit;width:100%;min-height:50px;background:#0b1020;color:var(--txt);border:2px solid var(--line);border-radius:12px;padding:8px;font-size:18px}
+.hd{display:flex;justify-content:space-between;align-items:center}
+.pill{padding:4px 10px;border-radius:20px;font-size:13px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hd"><div><h1>ECO RIVAL</h1><div class="sub">Predice la compra del rival · CS2 MR12</div></div>
+  <div id="status" class="pill"></div></div>
+
+  <div class="card pred" id="predCard"></div>
+
+  <div class="card">
+    <div class="lbl">Ronda <span id="rnum"></span> · Lado del rival</div>
+    <div class="row" data-k="side"><button class="t" data-v="T">TERRORISTA</button><button class="ct" data-v="CT">ANTITERRORISTA</button></div>
+    <div class="lbl">¿El rival ganó la ronda?</div>
+    <div class="row" data-k="won"><button class="win" data-v="1">GANÓ</button><button class="loss" data-v="0">PERDIÓ</button></div>
+    <div class="lbl">¿Cómo terminó?</div>
+    <div class="row" data-k="end">
+      <button data-v="elim">Eliminación</button><button data-v="bomb">Explotó bomba</button>
+      <button data-v="defuse">Desactivada</button><button data-v="time">Se acabó el tiempo</button>
+      <button data-v="plantlost">Plantaron y T perdió</button></div>
+    <div class="lbl">¿Qué compró el rival esta ronda?</div>
+    <div class="row" data-k="buy"><button data-v="pistol">Pistola</button><button data-v="eco">Eco</button><button data-v="force">Force</button><button data-v="full">Full buy</button><button data-v="custom">Gasto aprox.</button></div>
+    <div id="customBox" style="display:none"><div class="lbl">Gasto promedio por jugador ($)</div><input id="spend" type="number" inputmode="numeric" step="100" min="0" max="16000" placeholder="ej: 3500"></div>
+    <div class="lbl">Rivales vivos al final</div>
+    <div class="row" data-k="surv"><button data-v="0">0</button><button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button></div>
+    <div class="lbl">¿Guardaron armas? (opcional)</div>
+    <div class="row" data-k="saved"><button data-v="1">Sí, guardaron</button><button data-v="0">No</button></div>
+    <button class="main" id="add">REGISTRAR RONDA ➜</button>
+  </div>
+
+  <div class="card">
+    <div class="tools"><button id="undo">↶ Deshacer</button><button id="ot">Alargue: <span id="otv"></span></button><button id="reset">⟲ Nuevo match</button></div>
+    <div class="lbl">Historial</div><div class="hist" id="hist"></div>
+  </div>
+  <div class="sub" style="text-align:center">Estimación por jugador promedio. Las kills reales cambian la plata ±. Guarda todo en este navegador.</div>
+</div>
+<script>
+/* ===== ECO LOGIC (pura, testeable con node) ===== */
+const ECO={LADDER:[1400,1900,2400,2900,3400],WIN:{elim:3250,time:3250,bomb:3500,defuse:3500,plantlost:3250},
+ PLANT:800,MAX:16000,START:800,OT_START:10000,CT_KILL_BONUS:50,
+ FULL:{T:4300,CT:5000}, SPEND:{pistol:650,eco:200,force:2300}};
+function halfInfo(r,ot){ // r = número de ronda (1..)
+  if(r<=24){return {pistol:r===1||r===13,half:r<=12?1:2,lastOfHalf:r===12||r===24,swapAfter:r===12}}
+  if(!ot) return {pistol:false,half:3,lastOfHalf:false,swapAfter:false};
+  const k=(r-25)%3; return {otStart:k===0,pistol:false,half:3,lastOfHalf:k===2,swapAfter:k===2};
+}
+function initState(ot){return {ot:!!ot,rounds:[]}}
+// recalcula todo desde el historial
+function simulate(st){
+  let money=ECO.START,lossCount=1,r=1,out=[];
+  for(const rd of st.rounds){
+    const h=halfInfo(r,st.ot);
+    if(h.pistol){money=ECO.START;lossCount=1}
+    if(h.otStart){money=ECO.OT_START;lossCount=1}
+    let spend=rd.buy==='custom'?(+rd.spend||0):rd.buy==='full'?ECO.FULL[rd.side]+300:(ECO.SPEND[rd.buy]||0);
+    spend=Math.min(spend,money);
+    let carry=money-spend, income, incomeMin, kills;
+    const surv=+rd.surv;
+    if(rd.won){
+      income=ECO.WIN[rd.end]||3250; lossCount=Math.max(0,lossCount-1);
+      kills=4; incomeMin=income;
+    }else{
+      lossCount=Math.min(5,lossCount+1);
+      const bonus=ECO.LADDER[lossCount-1];
+      income=bonus; incomeMin=bonus;
+      if(rd.side==='T'&&rd.end==='plantlost'){income+=ECO.PLANT;incomeMin+=ECO.PLANT}
+      if(rd.side==='T'&&rd.end==='time'&&surv>0){income=bonus*(5-surv)/5;incomeMin=0}
+      kills=rd.buy==='eco'?1:2;
+    }
+    const killAvg=kills*300/5 + (rd.side==='CT'?kills*ECO.CT_KILL_BONUS:0);
+    // equipo guardado/sobreviviente reduce el costo de la siguiente compra
+    const keptFrac=(rd.buy==='full'||rd.buy==='force'||(rd.buy==='custom'&&spend>2000))?(surv/5)*(rd.won||+rd.saved?1:0.6):0;
+    money=Math.min(ECO.MAX,carry+income+killAvg);
+    const minMoney=Math.min(ECO.MAX,carry+incomeMin);
+    r++;
+    out.push({round:r-1,avg:Math.round(money),min:Math.round(minMoney),lossCount,keptFrac,side:rd.side});
+    money=Math.min(ECO.MAX,carry+income+killAvg);
+  }
+  return {nextRound:r,money,lossCount,log:out};
+}
+function predict(st){
+  const sim=simulate(st), r=sim.nextRound, h=halfInfo(r,st.ot);
+  const last=sim.log[sim.log.length-1];
+  let side=last?last.side:'T'; if(last&&halfInfo(r-1,st.ot).swapAfter) side=side==='T'?'CT':'T';
+  if(h.pistol) return {round:r,side,buy:'PISTOLA',conf:95,avg:ECO.START,min:ECO.START,why:'Ronda de pistola: todos parten con $800.'};
+  if(h.otStart) return {round:r,side,buy:'FULL BUY',conf:95,avg:ECO.OT_START,min:ECO.OT_START,why:'Inicio de alargue: $10.000 para todos.'};
+  if(!last) return {round:r,side,buy:'PISTOLA',conf:95,avg:800,min:800,why:'Inicio del match.'};
+  const avg=last.avg,min=last.min,full=ECO.FULL[side]*(1-0.6*last.keptFrac);
+  const nextLoss=ECO.LADDER[Math.min(5,sim.lossCount+1)-1];
+  const lastRound=h.lastOfHalf||r===24;
+  let buy,conf,why;
+  if(min>=full){buy='FULL BUY';conf=90;why=`Incluso con la plata mínima ($${min}) les alcanza para full (~$${Math.round(full)}).`}
+  else if(avg>=full){buy='FULL BUY';conf=70;why=`En promedio tienen ~$${avg}; justo para full (~$${Math.round(full)}). Alguno podría quedar corto.`}
+  else if(lastRound&&avg>=1200){buy='FORCE';conf=80;why='Última ronda de la mitad: la plata no se guarda, van a gastar todo.'}
+  else if(avg>=2000&&avg+(avg>=3000?0:0)>=full*0.6){
+    const ifEco=avg-200+nextLoss;
+    if(ifEco>=full&&avg<full*0.75){buy='ECO';conf=60;why=`Con ~$${avg} no llegan a full. Si ahorran y pierden reciben $${nextLoss} y llegan a ~$${Math.round(ifEco)}: lo lógico es eco para full buy después.`}
+    else{buy=avg>=3000?'FORCE':'HALF-BUY';conf=55;why=`~$${avg}: no alcanza full buy, pero ahorrar tampoco les asegura la siguiente. Espera SMGs, Galil/FAMAS o pistolas con chaleco.`}
+  }else{buy='ECO';conf=avg<1500?85:65;why=`Solo ~$${avg} por jugador. Lo más probable es eco (pistolas, quizás chaleco).${sim.lossCount>=3?` Ojo: su loss bonus ya está alto ($${nextLoss} si pierden).`:''}`}
+  if(last.keptFrac>0.3&&buy!=='FULL BUY')why+=' Tienen armas guardadas: alguno puede venir con rifle.';
+  return {round:r,side,buy,conf,avg,min,why,lossCount:sim.lossCount};
+}
+if(typeof module!=='undefined')module.exports={ECO,simulate,predict,initState,halfInfo};
+/* ===== FIN ECO LOGIC ===== */
+</script>
+<script>
+if(typeof document!=='undefined'){
+const KEY='ecoRival.v1';
+let st; try{st=JSON.parse(localStorage.getItem(KEY))}catch(e){} if(!st||!st.rounds)st=initState(false);
+let cur={};
+const $=s=>document.querySelector(s);
+function save(){localStorage.setItem(KEY,JSON.stringify(st))}
+const BUYCOL={'ECO':'#ff3b6b','HALF-BUY':'#f5a623','FORCE':'#ffd23f','FULL BUY':'#2bff88','PISTOLA':'#00f0ff'};
+function render(){
+  const p=predict(st);
+  cur.side=cur.side||p.side;
+  $('#rnum').textContent=p.round-1>0?(p.round-1)+' (recién jugada)':'—';
+  if(st.rounds.length===0)$('#rnum').textContent='1';
+  else $('#rnum').textContent=st.rounds.length+1;
+  const sc=p.side==='T'?'var(--t)':'var(--ct)';
+  $('#predCard').innerHTML=`<div class="lbl">Predicción ronda ${p.round} · rival <b style="color:${sc}">${p.side}</b></div>
+   <div class="big" style="color:${BUYCOL[p.buy]};text-shadow:0 0 14px ${BUYCOL[p.buy]}">${p.buy}</div>
+   <div class="money"><div><b>$${p.min}</b><span>mínimo</span></div><div><b>$${p.avg}</b><span>promedio est.</span></div><div><b>${p.lossCount??'-'}</b><span>racha derrotas</span></div></div>
+   <div class="lbl">Confianza ${p.conf}%</div><div class="bar"><i style="width:${p.conf}%"></i></div>
+   <div class="exp">${p.why}</div>`;
+  $('#status').textContent=`Ronda ${p.round}`;$('#status').style.border='1px solid '+sc;$('#status').style.color=sc;
+  $('#otv').textContent=st.ot?'SÍ':'NO';
+  document.querySelectorAll('.row[data-k]').forEach(row=>row.querySelectorAll('button').forEach(b=>b.classList.toggle('on',String(cur[row.dataset.k])===b.dataset.v)));
+  $('#customBox').style.display=cur.buy==='custom'?'block':'none';
+  const sim=simulate(st);
+  $('#hist').innerHTML=st.rounds.map((r,i)=>`<div>R${i+1} · ${r.side} · ${r.won?'ganó':'perdió'} (${r.end}) · compró ${r.buy}${r.buy==='custom'?' $'+r.spend:''} · vivos ${r.surv} → ~$${sim.log[i].avg}</div>`).reverse().join('')||'<div>Sin rondas todavía.</div>';
+}
+document.querySelectorAll('.row[data-k]').forEach(row=>row.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;const k=row.dataset.k;
+  cur[k]=(k==='won'||k==='saved')?+b.dataset.v:b.dataset.v;
+  if(k==='end'){if(['bomb','plantlost'].includes(cur.end))cur.side=cur.end==='bomb'&&cur.won!==0?'T':cur.side;}
+  render();}));
+$('#add').onclick=()=>{
+  for(const k of ['side','won','end','buy','surv'])if(cur[k]===undefined){alert('Falta completar: '+{side:'lado',won:'ganó/perdió',end:'cómo terminó',buy:'compra',surv:'vivos'}[k]);return}
+  if(cur.buy==='custom')cur.spend=+$('#spend').value||0;
+  st.rounds.push({...cur,saved:cur.saved||0});save();
+  const p=predict(st);cur={side:p.side};$('#spend').value='';render();scrollTo({top:0,behavior:'smooth'});
+};
+$('#undo').onclick=()=>{st.rounds.pop();save();cur={};render()};
+$('#reset').onclick=()=>{if(confirm('¿Empezar un match nuevo?')){st=initState(st.ot);save();cur={};render()}};
+$('#ot').onclick=()=>{st.ot=!st.ot;save();render()};
+render();
+}
+</script>
+</body>
+</html>
