@@ -103,6 +103,15 @@ summary::-webkit-details-marker{display:none}
 .rc.swap{margin-left:10px}
 .tools{display:flex;gap:8px;flex-wrap:wrap}
 .tool{flex:1;min-width:110px;min-height:46px;border-radius:12px;border:1px solid var(--brd);background:rgba(255,255,255,.04);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px}
+.seg{display:flex;align-items:center;gap:8px;margin-top:10px;padding:6px 8px}
+.segl{font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:var(--mut);padding:0 6px}
+.segr{font-size:12px;color:var(--mut);margin-left:auto;padding-right:6px}
+.sg{flex:0 1 120px;min-height:48px;border-radius:12px;border:1.5px solid var(--brd);background:rgba(255,255,255,.04);font-weight:900;font-size:17px;letter-spacing:2px;transition:.15s}
+.sg.ct.on{border-color:var(--ct);color:#fff;background:rgba(90,168,255,.25);box-shadow:0 0 16px rgba(90,168,255,.5)}
+.sg.t.on{border-color:var(--t);color:#fff;background:rgba(255,176,58,.25);box-shadow:0 0 16px rgba(255,176,58,.5)}
+header.usCT{border-color:rgba(90,168,255,.5);box-shadow:0 0 24px rgba(90,168,255,.18)}
+header.usT{border-color:rgba(255,176,58,.5);box-shadow:0 0 24px rgba(255,176,58,.18)}
+.ver{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:8px;border:1px solid var(--cy);color:var(--cy);font-weight:700}
 .foot{color:var(--mut);font-size:12px;text-align:center;margin-top:12px}
 .fade{animation:fd .35s ease}@keyframes fd{from{opacity:.2;transform:translateY(4px)}to{opacity:1;transform:none}}
 .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(100px);background:#0d1424;border:1px solid var(--cy);padding:10px 16px;border-radius:12px;transition:.3s;z-index:9}
@@ -126,6 +135,7 @@ summary::-webkit-details-marker{display:none}
   <div class="score"><div><div class="n us" id="sUs">0</div><small>NOS</small></div><div style="color:var(--mut)">:</div><div><div class="n them" id="sThem">0</div><small>RIVAL</small></div></div>
   <div class="rbadge">Ronda<b id="rNow">1</b></div>
  </header>
+ <div class="glass seg" id="ourSeg"><span class="segl">Nosotros</span><button data-our="CT" class="sg ct">CT</button><button data-our="T" class="sg t">T</button><span class="segr" id="segInfo"></span></div>
 
  <div class="grid">
   <section class="glass card fade" id="predCard"></section>
@@ -153,7 +163,7 @@ summary::-webkit-details-marker{display:none}
    <div class="tools" style="margin-top:8px"><button class="tool" id="bUndo"><svg width="16" height="16"><use href="#i-undo"/></svg>Deshacer</button><button class="tool" id="bNew"><svg width="16" height="16"><use href="#i-new"/></svg>Nuevo match</button></div>
   </section>
  </div>
- <div class="foot">Estimación por jugador con simulación de 400 escenarios. Las drops y kills reales mueven la plata. Todo se guarda en este navegador.</div>
+ <div class="foot">Estimación por jugador con simulación de 400 escenarios. Las drops y kills reales mueven la plata. Todo se guarda en este navegador. <span class="ver">v2.1</span></div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -312,6 +322,9 @@ function opt(cls,on,label,data,style=''){return `<button class="opt ${cls}${on?'
 function render(){
  const p=predict(st), side=p.side, sc=side==='T'?'sideT':'sideCT';
  $('#sUs').textContent=p.us;$('#sThem').textContent=p.them;$('#rNow').textContent=p.round;
+ const our=side==='T'?'CT':'T';document.querySelector('header').className='glass us'+our;
+ document.querySelectorAll('.sg').forEach(b=>b.classList.toggle('on',b.dataset.our===our));
+ $('#segInfo').innerHTML='Rival <b style="color:var(--'+(side==='T'?'t':'ct')+')">'+side+'</b>'+(p.round<=24?' · cambio en R13':'');
  $('#sideNow').className='sideTag '+sc;$('#sideNow').textContent='Rival '+side;
  const d=p.dist, top=p.top, name=p.pistol?'Ronda de pistola':TIERS[top];
  const L=p.learn;
@@ -350,6 +363,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
  else if(ds.k!=null)cur.kills=ds.k==='a'?null:+ds.k;
  else if(ds.wp!=null)cur.weap=ds.wp||null;
  else if(ds.s!=null)cur.saved=+ds.s;
+ else if(ds.our){const r=st.rounds.length+1,rival=ds.our==='T'?'CT':'T';if(sideOf(st,r)!==rival){st.start=st.start==='T'?'CT':'T';save();toast('Nosotros: '+ds.our)}}
  else return; render();});
 $('#sMinus').onclick=()=>{cur.surv=Math.max(0,(cur.surv||0)-1);render()};
 $('#sPlus').onclick=()=>{cur.surv=Math.min(5,(cur.surv||0)+1);render()};
